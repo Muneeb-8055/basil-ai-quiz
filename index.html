@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AAA Digital — Lead Scraper Requirements Quiz</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f4f6f9; color: #1a202c; line-height: 1.5; padding: 20px; }
+  .container { max-width: 820px; margin: 0 auto; }
+  header { background: linear-gradient(135deg, #1e3a8a, #1e40af); color: white; padding: 28px; border-radius: 12px; margin-bottom: 20px; }
+  header h1 { font-size: 24px; margin-bottom: 6px; }
+  header p { font-size: 14px; opacity: 0.9; }
+  .meta { background: white; padding: 18px; border-radius: 10px; margin-bottom: 20px; }
+  .meta label { display: block; font-weight: 600; margin-bottom: 4px; color: #4a5568; font-size: 13px; }
+  .meta input, .meta textarea { width: 100%; padding: 8px 10px; border: 1px solid #cbd5e0; border-radius: 6px; font-size: 14px; font-family: inherit; }
+  .section { background: white; border-radius: 10px; padding: 22px; margin-bottom: 16px; }
+  .section-header { display: flex; align-items: center; gap: 10px; padding-bottom: 14px; margin-bottom: 16px; border-bottom: 2px solid #e2e8f0; }
+  .section-num { background: #1e3a8a; color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; flex-shrink: 0; }
+  .section-title { font-size: 16px; font-weight: 700; color: #1e3a8a; }
+  .section-subtitle { font-size: 12px; color: #64748b; margin-top: 2px; }
+  .question { margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid #f1f5f9; }
+  .question:last-child { border-bottom: none; padding-bottom: 0; margin-bottom: 0; }
+  .q-num { display: inline-block; background: #eff6ff; color: #1e40af; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px; margin-bottom: 4px; }
+  .q-text { font-size: 14px; font-weight: 500; margin-bottom: 4px; }
+  .q-hint { font-size: 12px; color: #64748b; margin-bottom: 10px; font-style: italic; }
+  .options { display: flex; flex-direction: column; gap: 6px; }
+  .option { display: flex; align-items: flex-start; gap: 8px; padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 6px; cursor: pointer; }
+  .option:hover { background: #f8fafc; }
+  .option input { margin-top: 3px; cursor: pointer; }
+  .opt-text { font-size: 13px; flex: 1; }
+  .free-input { width: 100%; margin-top: 8px; padding: 8px 10px; border: 2px solid #3b82f6; border-radius: 6px; font-size: 13px; font-family: inherit; background: #eff6ff; display: block; }
+  .free-input::placeholder { color: #6b7280; font-style: italic; }
+  .actions { position: sticky; bottom: 0; background: white; padding: 16px; border-radius: 10px; box-shadow: 0 -2px 8px rgba(0,0,0,0.08); display: flex; gap: 10px; justify-content: space-between; align-items: center; margin-top: 20px; }
+  .progress-text { font-size: 13px; color: #4a5568; }
+  .progress-bar { height: 5px; background: #e2e8f0; border-radius: 3px; overflow: hidden; margin-top: 4px; width: 200px; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, #3b82f6, #1e3a8a); width: 0%; transition: width 0.3s; }
+  .btn { padding: 10px 20px; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .btn-secondary { background: white; color: #1e3a8a; border: 1px solid #1e3a8a; }
+  .btn-success { background: #059669; color: white; }
+  .toast { position: fixed; top: 20px; right: 20px; background: #1e3a8a; color: white; padding: 12px 18px; border-radius: 6px; transform: translateX(400px); transition: transform 0.3s; z-index: 1000; font-size: 13px; }
+  .toast.show { transform: translateX(0); }
+  .toast.success { background: #059669; }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>AAA Digital — Lead Scraper Requirements Quiz</h1>
+    <p>50 questions · ~5 minutes · every question has a free-text field for your own answer</p>
+  </header>
+
+  <div class="meta">
+    <label>Your name</label>
+    <input type="text" id="respondentName" placeholder="e.g. Haseeb">
+    <div style="margin-top: 10px;">
+      <label>Anything we should know? (optional)</label>
+      <textarea id="respondentNotes" rows="2" placeholder="e.g. Focus on US carriers only, skip Canada"></textarea>
+    </div>
+  </div>
+
+  <div id="quizContainer"></div>
+
+  <div class="actions">
+    <div>
+      <div class="progress-text"><span id="progressText">0 of 50 answered</span></div>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    </div>
+    <div style="display: flex; gap: 8px;">
+      <button class="btn btn-secondary" onclick="saveProgress()">Save</button>
+      <button class="btn btn-success" onclick="submitQuiz()">Submit & Download</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const quizData = [
+  {
+    title: "Section 1: Sources & Volume",
+    subtitle: "Where carriers come from, how many you want",
+    questions: [
+      { id: "q1_1", text: "Where should the lead scraper pull carriers from first?", hint: "V1 source priority",
+        options: ["FMCSA only (~1M US carriers, free)", "FMCSA + SAFER cross-reference", "FMCSA + state DOTs (CA, TX, IL)", "AAA's existing carrier list as seed"] },
+      { id: "q1_2", text: "How many verified carriers do you want by end of month 1?", hint: "Volume drives cost",
+        options: ["Up to 50K (light, fast)", "50K–200K (medium, recommended)", "200K–500K (heavy)", "500K+ (full FMCSA scope)"] },
+      { id: "q1_3", text: "How often should the database refresh?", hint: "Cadence drives infra complexity",
+        options: ["One-time load", "Weekly (re-run + dedupe + score)", "Daily (incremental updates)", "Real-time on demand"] },
+      { id: "q1_4", text: "Should we include Canada / Mexico carriers in V1?", hint: "Cross-border scope",
+        options: ["US only", "US + Canada", "US + Canada + Mexico", "Just US, discuss cross-border later"] },
+      { id: "q1_5", text: "What is the minimum data needed before a carrier is outreach-eligible?", hint: "Per your data quality rule",
+        options: ["Phone OR email (loose)", "Phone AND email (strict)", "Phone AND email AND active authority", "Verified phone (live lookup) AND verified email"] },
+      { id: "q1_6", text: "Should we scrape brokers and shippers too, or carriers only?", hint: "Entity scope",
+        options: ["Carriers only", "Carriers + brokers", "Carriers + brokers + shippers", "Carriers first, add others in V2"] },
+      { id: "q1_7", text: "What phone verification approach in V1?", hint: "Live verification costs money",
+        options: ["Format check only (free, fast)", "Format + Twilio Lookup ($0.05/number)", "Format + Twilio + carrier line-type detection", "Skip phone verification in V1"] },
+      { id: "q1_8", text: "What email verification approach in V1?", hint: "Bounces hurt sender reputation",
+        options: ["Format check only (free)", "Format + MX record check", "Format + MX + SMTP (ZeroBounce, $0.01/email)", "Skip email verification in V1"] },
+      { id: "q1_9", text: "How should we handle FMCSA 'inactive' carriers?", hint: "Inactive doesn't mean unusable",
+        options: ["Include them (larger pool, lower quality)", "Exclude them (cleaner pool)", "Separate bucket, score them low", "Include only if authority age < 5 years"] },
+      { id: "q1_10", text: "How should duplicates be resolved?", hint: "Same MC/DOT, multiple listings",
+        options: ["Keep most recent record", "Keep most complete record", "Merge fields from all duplicates", "Manual review for duplicates"] }
+    ]
+  },
+  {
+    title: "Section 2: Carrier Profile Fields",
+    subtitle: "What data per carrier",
+    questions: [
+      { id: "q2_1", text: "What equipment types should we classify?", hint: "Drives matching to loads",
+        options: ["General freight (one bucket)", "Dry van, reefer, flatbed", "Dry van, reefer, flatbed, hotshot, box truck", "All FMCSA equipment classes (~30)"] },
+      { id: "q2_2", text: "How should we score fleet size in lead priority?", hint: "Small vs mid vs large",
+        options: ["Bigger fleet = higher score", "1–5 trucks = highest score (sweet spot)", "6–20 trucks = highest score", "Don't factor fleet size"] },
+      { id: "q2_3", text: "How should authority age affect lead score?", hint: "Years since MC was issued",
+        options: ["Older is better (5+ years = HOT)", "Newer is better (< 2 years = HOT)", "Authority age is a soft signal only", "Don't factor authority age"] },
+      { id: "q2_4", text: "What operating state data should we capture?", hint: "Drives regional targeting",
+        options: ["Home state only (from FMCSA address)", "Home state + all states they operate in", "Home state + lane preferences (inferred)", "Home state + region (Northeast, Southeast, etc.)"] },
+      { id: "q2_5", text: "Should we capture insurance / safety data from SAFER?", hint: "Compliance + safety info",
+        options: ["Yes, full SAFER cross-reference", "Insurance status only", "Safety rating only", "Skip SAFER in V1"] },
+      { id: "q2_6", text: "Should we infer preferred lanes from the carrier's address?", hint: "AI-augmented profile",
+        options: ["Yes, infer from home state (TX carrier → TX-OK, TX-LA lanes)", "Yes, infer from history (later, needs more data)", "No, only capture what they tell us", "Infer but mark as 'low confidence'"] },
+      { id: "q2_7", text: "Should we capture driver preferences (CDL, hazmat, etc.)?", hint: "Driver-level data",
+        options: ["Yes, full driver profile (CDL class, endorsements, years experience)", "Basic only (CDL class)", "Skip drivers, focus on equipment", "Yes but only from voluntary signup form"] },
+      { id: "q2_8", text: "What is the source of the carrier's phone number in V1?", hint: "FMCSA often has stale numbers",
+        options: ["FMCSA filing only (free, often stale)", "FMCSA + live Twilio verification", "Skip FMCSA, scrape from carrier websites", "FMCSA + manual re-verification queue"] },
+      { id: "q2_9", text: "Should we capture the carrier's website URL?", hint: "For AI research later",
+        options: ["Yes, scrape from FMCSA if available", "Yes, run a Google search for each carrier", "No, not in V1", "Yes, but mark as 'unverified'"] },
+      { id: "q2_10", text: "What additional fields would you want in the profile that we haven't covered?", hint: "Free text",
+        options: ["No additional fields", "Years in business (separate from authority age)", "Insurance carrier name", "DBA / alternate names"] }
+    ]
+  },
+  {
+    title: "Section 3: Lead Scoring",
+    subtitle: "HOT / WARM / COLD logic",
+    questions: [
+      { id: "q3_1", text: "How many scoring tiers in V1?", hint: "How granular the buckets are",
+        options: ["2 tiers: HOT, COLD", "3 tiers: HOT, WARM, COLD (per spec)", "4 tiers: HOT, WARM, COLD, UNVERIFIED", "5 tiers with priority 1-5"] },
+      { id: "q3_2", text: "How should active authority status factor in?", hint: "Must-have vs nice-to-have",
+        options: ["Active = +30 points, Out-of-service = excluded", "Active = +20 points, Out-of-service = -50", "Active = required (auto-reject otherwise)", "Active = +10 (soft signal)"] },
+      { id: "q3_3", text: "How should phone validity affect score?", hint: "Different weights possible",
+        options: ["Valid phone = +20 (large weight)", "Valid phone = +10 (moderate)", "Valid phone = +5 (small)", "Phone validity is binary (pass/fail), no points"] },
+      { id: "q3_4", text: "How should email validity affect score?", hint: "Mirrors phone logic",
+        options: ["Valid email = +20 (large weight)", "Valid email = +10 (moderate)", "Valid email = +5 (small)", "Email validity is binary (pass/fail)"] },
+      { id: "q3_5", text: "Should geographic location affect score?", hint: "Top freight states",
+        options: ["Yes, top 10 freight states get +10 (TX, CA, FL, IL, GA, PA, OH, NC, NJ, TN)", "Yes, all states get +5 equally", "No, geography is not a scoring factor", "Yes, AAA's preferred states get +15"] },
+      { id: "q3_6", text: "How should the score be visualized in the CRM?", hint: "What Haseeb sees",
+        options: ["Color-coded cells (red/yellow/green)", "Numeric score (0-100) with tier label", "Just the tier label (HOT/WARM/COLD)", "Score + tier + breakdown of which signals added points"] },
+      { id: "q3_7", text: "Should the score be dynamic or static?", hint: "Per your spec rule #2: dynamic priority shift",
+        options: ["Static (score once at scrape time)", "Dynamic (re-score when carrier is contacted)", "Dynamic with feedback loop (re-score based on conversion)", "Hybrid: static initial, dynamic only on engagement"] },
+      { id: "q3_8", text: "How should failed call attempts affect score?", hint: "Per your spec rule #2: decrease priority if 3+ failed",
+        options: ["3 failed calls = -20 points (downgrade tier)", "3 failed calls = move to COLD, no more outreach", "5 failed calls = pause for 30 days", "Failed calls don't affect score (volume-only)"] },
+      { id: "q3_9", text: "What threshold of HOT leads do you want the dialer to pull daily?", hint: "Dialer list size",
+        options: ["20 HOT leads per day (manageable)", "50 HOT leads per day", "100 HOT leads per day (aggressive)", "All HOT leads, no cap"] },
+      { id: "q3_10", text: "Anything else about scoring we should know?", hint: "Free text",
+        options: ["Nothing else", "Score should weight recency (recently scraped = higher)", "Score should weight engagement (replied to SMS = higher)", "Score should exclude carriers that said 'remove me'"] }
+    ]
+  },
+  {
+    title: "Section 4: Data Quality & Compliance",
+    subtitle: "TCPA, DNC, validation, error handling",
+    questions: [
+      { id: "q4_1", text: "How should the DNC (Do Not Call) list be handled?", hint: "FTC requires this for telemarketing",
+        options: ["Auto-exclude DNC phones from call outreach (default)", "Flag DNC phones for manual review", "Ignore DNC for V1, add before production", "Auto-exclude DNC, allow SMS/email only"] },
+      { id: "q4_2", text: "How should we handle carriers that say 'remove me from your list'?", hint: "Per your spec + TCPA",
+        options: ["Mark DNC, never contact on any channel (strict)", "Mark DNC for calls only, allow SMS/email", "Add to suppression for 30 days, resume after", "Flag for manual review before any contact"] },
+      { id: "q4_3", text: "What TCPA consent do we need before calling a carrier?", hint: "Legal requirement",
+        options: ["Prior express written consent (form, checkbox)", "Verbal consent at start of call (recorded)", "No consent needed (B2B exemption)", "Use AAA's existing consent from past engagement"] },
+      { id: "q4_4", text: "How should we handle phones that fail live verification?", hint: "Disconnected / wrong number / mobile vs landline",
+        options: ["Drop the number, keep the record with no phone", "Keep the record, mark phone as 'unverified'", "Move to a 'retry verification' queue", "Re-scrape from a different source"] },
+      { id: "q4_5", text: "What is the data retention policy for inactive carriers?", hint: "Per your spec compliance",
+        options: ["Keep forever", "Archive after 12 months inactive", "Archive after 24 months inactive (per spec)", "Delete after 24 months inactive"] },
+      { id: "q4_6", text: "How should carrier data updates (e.g., address change) be detected?", hint: "Ongoing maintenance",
+        options: ["Manual flag in CRM (someone notices)", "Quarterly re-scrape of all HOT leads", "Weekly delta check (new FMCSA file)", "Real-time FMCSA feed (if available)"] },
+      { id: "q4_7", text: "What happens if FMCSA is down during a scheduled scrape?", hint: "Failure handling",
+        options: ["Retry every 5 min for 1 hour, then fail", "Skip this week's scrape, retry next week", "Alert ops immediately, pause until resolved", "Use cached data, retry async"] },
+      { id: "q4_8", text: "How should invalid / bounced emails be handled in V1?", hint: "Bounces kill sender reputation",
+        options: ["Drop the email, keep the record", "Mark email as 'bounced', retry once after 7 days", "Mark email as 'bounced', exclude from email outreach", "Don't track bounces in V1"] },
+      { id: "q4_9", text: "Should we track which carriers responded vs ignored?", hint: "For optimization loop",
+        options: ["Yes, all engagement (calls, SMS, email) tracked", "Yes, but only for HOT leads", "No, V1 doesn't track engagement", "Track only positive engagement (replied, transferred)"] },
+      { id: "q4_10", text: "Any compliance concerns not covered above?", hint: "Free text",
+        options: ["No other concerns", "Concerned about state-level telemarketing laws", "Concerned about cross-border (Canada/Mexico) calling", "Concerned about AAA's brand reputation if we call wrong numbers"] }
+    ]
+  },
+  {
+    title: "Section 5: Build Logistics & Success",
+    subtitle: "Timeline, success metrics, who does what",
+    questions: [
+      { id: "q5_1", text: "What is the target V1 ship date?", hint: "Realistic timeline",
+        options: ["2 weeks from now (aggressive)", "3-4 weeks (recommended)", "6 weeks (cautious)", "8+ weeks (full scope)"] },
+      { id: "q5_2", text: "How will you measure V1 success?", hint: "What's the 'done' definition",
+        options: ["Database has 100K+ verified carriers", "First 50 qualified transfers to closer", "Cost per qualified lead < $5", "Conversion rate (qualified / contacted) > 15%"] },
+      { id: "q5_3", text: "Who on the AAA side will own the data review?", hint: "Who signs off on quality",
+        options: ["You (Haseeb) personally", "Your sales / dispatch lead", "No one — automated checks only", "Shared (multiple people review)"] },
+      { id: "q5_4", text: "How often do you want progress demos?", hint: "Cadence",
+        options: ["Daily updates (Slack / WhatsApp)", "Weekly written report + ad-hoc on blockers", "Bi-weekly demo", "Milestone-based only"] },
+      { id: "q5_5", text: "What is the budget for V1 cloud + verification costs?", hint: "We pass through infra cost",
+        options: ["Under $100/month (lean)", "$100–$500/month (medium)", "$500–$2,000/month (aggressive)", "No specific cap, optimize for quality"] },
+      { id: "q5_6", text: "Should V1 include a simple web UI for the team to browse the database?", hint: "Or just Google Sheet + JSON export",
+        options: ["Yes, basic search/filter UI", "No, Google Sheet is enough for V1", "No, but add a /search API for the team", "Yes, but defer to V2"] },
+      { id: "q5_7", text: "Should the scraper run on a schedule (cron) or be triggered manually?", hint: "Operational model",
+        options: ["Scheduled (weekly cron, automatic)", "Manual (you trigger when needed)", "Both — scheduled for V1, manual for ad-hoc", "Webhook trigger (when new FMCSA data is published)"] },
+      { id: "q5_8", text: "If the scraper finds conflicting data for the same MC (e.g., different phone from two sources), what wins?", hint: "Conflict resolution",
+        options: ["FMCSA wins (authoritative source)", "Most recent source wins", "Live verification wins (Twilio Lookup)", "Manual review queue"] },
+      { id: "q5_9", text: "What is the #1 thing the lead scraper should NOT do?", hint: "Anti-goal",
+        options: ["Call carriers (that's a different module)", "Scrape AAA's competitors' carrier lists", "Store carrier SSN or sensitive PII", "Make decisions about which carriers to call"] },
+      { id: "q5_10", text: "Anything else we should know about the lead scraper build?", hint: "Free text",
+        options: ["Nothing else", "I want a specific UI design / dashboard", "I have an existing CRM we need to integrate with", "I have specific competitors I want to match or beat"] }
+    ]
+  }
+];
+
+let answers = {};
+let otherTexts = {};
+
+function renderQuiz() {
+  const container = document.getElementById('quizContainer');
+  let qNum = 0;
+  quizData.forEach((section, sIdx) => {
+    const sectionEl = document.createElement('div');
+    sectionEl.className = 'section';
+    sectionEl.innerHTML = `<div class="section-header"><div class="section-num">${sIdx + 1}</div><div><div class="section-title">${section.title}</div><div class="section-subtitle">${section.subtitle}</div></div></div>`;
+    section.questions.forEach((q) => {
+      qNum++;
+      const qEl = document.createElement('div');
+      qEl.className = 'question';
+      const optionsHtml = q.options.map((opt, i) => {
+        const letter = String.fromCharCode(65 + i);
+        return `<label class="option"><input type="radio" name="${q.id}" value="${letter}" onchange="handleAnswer('${q.id}', '${letter}')"><span class="opt-text">${letter}. ${opt}</span></label>`;
+      }).join('');
+      const otherOptionHtml = `<label class="option"><input type="radio" name="${q.id}" value="OTHER" onchange="handleAnswer('${q.id}', 'OTHER')"><span class="opt-text">Other (write your own answer)</span></label>`;
+      const freeInputHtml = `<textarea class="free-input" id="other-${q.id}" rows="2" placeholder="Type your own answer here, or use this to add detail to a selected option..." oninput="handleOtherText('${q.id}', this.value)"></textarea>`;
+      qEl.innerHTML = `<span class="q-num">Q${qNum}</span><div class="q-text">${q.text}</div>${q.hint ? `<div class="q-hint">${q.hint}</div>` : ''}<div class="options" data-qid="${q.id}">${optionsHtml}${otherOptionHtml}</div>${freeInputHtml}`;
+      sectionEl.appendChild(qEl);
+    });
+    container.appendChild(sectionEl);
+  });
+}
+
+function handleAnswer(qid, value) {
+  answers[qid] = value;
+  updateProgress();
+}
+
+function handleOtherText(qid, value) { otherTexts[qid] = value; }
+
+function updateProgress() {
+  const total = quizData.reduce((sum, s) => sum + s.questions.length, 0);
+  const answered = Object.keys(answers).length;
+  document.getElementById('progressText').textContent = `${answered} of ${total} answered`;
+  document.getElementById('progressFill').style.width = `${(answered / total) * 100}%`;
+}
+
+function getFullAnswers() {
+  const result = {};
+  for (const qid in answers) {
+    result[qid] = { selected: answers[qid], otherText: otherTexts[qid] || null };
+  }
+  return result;
+}
+
+function showToast(msg, type = '') {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.className = 'toast show ' + type;
+  setTimeout(() => { toast.className = 'toast'; }, 3000);
+}
+
+function saveProgress() {
+  const data = { timestamp: new Date().toISOString(), respondent: document.getElementById('respondentName').value || 'Anonymous', notes: document.getElementById('respondentNotes').value || '', answers: getFullAnswers(), completed: false };
+  localStorage.setItem('aaa_quiz_progress', JSON.stringify(data));
+  showToast('Progress saved', 'success');
+}
+
+function submitQuiz() {
+  const total = quizData.reduce((sum, s) => sum + s.questions.length, 0);
+  const answered = Object.keys(answers).length;
+  if (answered < total && !confirm(`Answered ${answered} of ${total}. Submit anyway?`)) return;
+  const data = { timestamp: new Date().toISOString(), respondent: document.getElementById('respondentName').value || 'Anonymous', notes: document.getElementById('respondentNotes').value || '', answers: getFullAnswers(), completed: true, totalQuestions: total, answeredCount: answered };
+  const jsonBlob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const jsonLink = document.createElement('a');
+  jsonLink.href = URL.createObjectURL(jsonBlob);
+  jsonLink.download = `aaa-quiz-${new Date().toISOString().split('T')[0]}.json`;
+  jsonLink.click();
+  generatePDF(data);
+  showToast('Files downloaded', 'success');
+}
+
+function generatePDF(data) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  let y = 20;
+  const margin = 20;
+  const maxWidth = doc.internal.pageSize.width - 2 * margin;
+  doc.setFontSize(16); doc.setFont(undefined, 'bold');
+  doc.text('AAA Lead Scraper Quiz', margin, y); y += 10;
+  doc.setFontSize(9); doc.setFont(undefined, 'normal');
+  doc.text(`Respondent: ${data.respondent} | ${new Date(data.timestamp).toLocaleString()} | ${data.answeredCount}/${data.totalQuestions} answered`, margin, y); y += 8;
+  if (data.notes) { const l = doc.splitTextToSize(`Notes: ${data.notes}`, maxWidth); doc.text(l, margin, y); y += l.length * 4 + 4; }
+  let qNum = 0;
+  quizData.forEach((section, sIdx) => {
+    if (y > 260) { doc.addPage(); y = 20; }
+    doc.setFontSize(12); doc.setFont(undefined, 'bold');
+    doc.text(section.title, margin, y); y += 7;
+    section.questions.forEach((q) => {
+      qNum++;
+      if (y > 270) { doc.addPage(); y = 20; }
+      doc.setFontSize(9); doc.setFont(undefined, 'bold');
+      const ql = doc.splitTextToSize(`Q${qNum}. ${q.text}`, maxWidth);
+      doc.text(ql, margin, y); y += ql.length * 4;
+      doc.setFont(undefined, 'normal');
+      const ans = data.answers[q.id];
+      if (ans) {
+        if (ans.otherText) {
+          const al = doc.splitTextToSize(`A (free text): ${ans.otherText}`, maxWidth - 5);
+          doc.text(al, margin + 4, y); y += al.length * 4;
+        }
+        if (ans.selected && ans.selected !== 'OTHER') {
+          const idx = ans.selected.charCodeAt(0) - 65;
+          const txt = idx >= 0 && idx < q.options.length ? `${ans.selected}. ${q.options[idx]}` : ans.selected;
+          const al = doc.splitTextToSize(`A (option): ${txt}`, maxWidth - 5);
+          doc.text(al, margin + 4, y); y += al.length * 4;
+        } else if (ans.selected === 'OTHER' && !ans.otherText) {
+          const al = doc.splitTextToSize(`A: OTHER (no text provided)`, maxWidth - 5);
+          doc.text(al, margin + 4, y); y += al.length * 4;
+        }
+      } else {
+        doc.setTextColor(150); doc.text(`A: [not answered]`, margin + 4, y); doc.setTextColor(0);
+      }
+      y += 4;
+    });
+    y += 4;
+  });
+  doc.save(`aaa-quiz-${new Date().toISOString().split('T')[0]}.pdf`);
+}
+
+renderQuiz();
+updateProgress();
+</script>
+</body>
+</html>
