@@ -207,6 +207,32 @@ const quizData = [
       { id: "q5_10", text: "Anything else we should know about the lead scraper build?", hint: "Free text",
         options: ["Nothing else", "I want a specific UI design / dashboard", "I have an existing CRM we need to integrate with", "I have specific competitors I want to match or beat"] }
     ]
+  },
+  {
+    title: "Section 6: Integration, Conversion & Economics",
+    subtitle: "Gaps caught in review — read carefully",
+    questions: [
+      { id: "q6_1", text: "What does 'convert' mean in your scoring context? (defines the whole scoring model)", hint: "Pick the closest — this drives the lead score logic",
+        options: ["Carrier answers the AI's call", "Carrier signs up as an active carrier on AAA's platform", "Carrier accepts a load / dispatches with us", "Carrier makes a phone call back / engages via SMS or email"] },
+      { id: "q6_2", text: "What CRM / dialer does AAA use today that the lead scraper should integrate with?", hint: "Integration can dominate timeline — be honest",
+        options: ["No existing CRM / dialer (we build from scratch)", "GoHighLevel (GHL) — common in digital agencies", "HubSpot / Salesforce / Zoho (enterprise)", "Aircall / JustCall / RingCentral + simple CRM", "Google Sheets only (no formal CRM)"] },
+      { id: "q6_3", text: "Do you have an existing suppression / do-not-contact list that the scraper should respect?", hint: "If yes, we can import + dedupe before any outreach",
+        options: ["No existing suppression list", "Yes, a manual list (Excel / Google Sheet)", "Yes, a CRM-managed list (DNC tags)", "Yes, in multiple places — we need to consolidate first"] },
+      { id: "q6_4", text: "Output format for the lead database — how will the team consume it?", hint: "Drives the export / API design",
+        options: ["Google Sheet (visual, easy to share, manual export)", "Postgres database + REST API (programmatic, real-time)", "Daily CSV / JSON file drops to S3 or email", "Webhook to our CRM (push every new lead as it scores)"] },
+      { id: "q6_5", text: "What is your current cost per qualified lead? (sets the budget ceiling for verification + scraping)", hint: "Honest number — even a guess is useful",
+        options: ["Under $5/lead (lean)", "$5–$25/lead (medium)", "$25–$100/lead (expensive — manual research)", "$100+/lead (very expensive — closers doing research)", "I don't know (let's instrument it)"] },
+      { id: "q6_6", text: "Coverage vs freshness — what matters more for V1?", hint: "These conflict for FMCSA",
+        options: ["Coverage (have every possible carrier, freshness not critical)", "Freshness (have the most recent contact info, smaller pool OK)", "Both equally (full re-scrape weekly)", "Neither — quality (verified, accurate) matters most"] },
+      { id: "q6_7", text: "How will the team search the lead database day-to-day?", hint: "Query patterns drive the API/UI design",
+        options: ["Filter by state + equipment type + tier (the basic combo)", "Search by MC number (one-carrier lookup)", "Bulk export filtered lists for the dialer", "All of the above + fuzzy search by company name"] },
+      { id: "q6_8", text: "Should the lead scraper write to your CRM directly, or stage data for review first?", hint: "Trust + safety — staging lets a human eyeball the data before it hits production CRM",
+        options: ["Write direct to CRM (no human review)", "Stage in a 'pending review' sheet/table, manual approval to push to CRM", "Stage + auto-approve HIGH-confidence leads (HOT tier), manual review for WARM/COLD", "Stage everything for first month, then switch to direct after trust builds"] },
+      { id: "q6_9", text: "How do you want the scraper to handle carriers that no longer have authority (out-of-service, revoked)?", hint: "These often have valid-looking contact info but can't legally dispatch",
+        options: ["Auto-exclude (do not add to the database)", "Add but mark as 'inactive — do not contact'", "Add with a 'last known good date' — outreach OK if recent activity", "Skip in V1, deal with in V2"] },
+      { id: "q6_10", text: "If you had to pick ONE thing that would make the lead scraper a clear win for AAA, what would it be?", hint: "Helps us prioritize the build — the answer becomes the headline metric for the V1 demo",
+        options: ["Volume of new leads per week (more = better)", "Quality / verification rate (% that pass your data quality rule)", "Cost per qualified lead (cheaper = better)", "Speed to first call (faster scraper-to-dialer = better)", "Coverage of long-tail carriers (small fleets, regional operators)"] }
+    ]
   }
 ];
 
